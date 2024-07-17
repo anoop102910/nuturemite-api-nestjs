@@ -11,6 +11,7 @@
     "prod:db:migrate": "dotenv -e .env.production -- prisma migrate deploy",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "start:dev:prod":"dotenv -e .env.production --  node dist/main",
     "start:prod": "node dist/main",
 
     "dev:db:rm": "docker compose rm dev-db -s -f -v",
