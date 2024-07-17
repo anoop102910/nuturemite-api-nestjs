@@ -1,0 +1,398 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id          Int       @id @default(autoincrement())
+  dateOfBirth DateTime?
+  mobile      String?
+  gender      Gender?
+  addressId   Int?
+  address     Address?  @relation(fields: [addressId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int       @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+
+  @@map("profiles")
+}
+
+enum Gender {
+  male
+  female
+  others
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  email        String?        @unique
+  username     String?
+  name         String
+  password     String?
+  role         Role?          @default(user)
+  profile      Profile?
+  orders       Order[]
+  cartItem     CartItem[]
+  apiTokens    ApiToken[]
+  vendors      Vendor[]
+  subOrders    SubOrder[]
+  wishlistItem WishlistItem[]
+  reviews      Review[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now())
+  Address      Address[]
+
+  @@map("users")
+}
+
+enum Role {
+  user
+  admin
+  vendor
+}
+
+model Ucode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  email       String
+  dateExpired DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+
+  @@map("ucodes")
+}
+
+model ApiToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("api_tokens")
+}
+
+model City {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  stateId   Int
+  state     State     @relation(fields: [stateId], references: [id])
+  addresses Address[]
+
+  @@index([stateId])
+  @@map("cities")
+}
+
+model State {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  countryId Int
+  country   Country   @relation(fields: [countryId], references: [id])
+  addresses Address[]
+  cities    City[]
+
+  @@index([countryId])
+  @@map("states")
+}
+
+model Country {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  addresses Address[]
+  states    State[]
+
+  @@map("countries")
+}
+
+model Address {
+  id            Int             @id @default(autoincrement())
+  street        String?
+  userId        Int
+  user          User            @relation(fields: [userId], references: [id])
+  cityId        Int?
+  city          City?           @relation(fields: [cityId], references: [id])
+  stateId       Int?
+  state         State?          @relation(fields: [stateId], references: [id])
+  countryId     Int?
+  country       Country?        @relation(fields: [countryId], references: [id])
+  zip           String?
+  orders        Order[]
+  vendorDetails VendorDetails[]
+  profiles      Profile[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  image       String?
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  image       String?
+  products    Product[]
+
+  @@map("brands")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  title String
+
+  @@map("tags")
+}
+
+model Product {
+  id            Int             @id @default(autoincrement())
+  name          String
+  slug          String?
+  isSale        Int?            @default(0)
+  price         Decimal
+  discount      Int
+  quantity      Int?
+  description   String?
+  vendorId      Int
+  vendor        Vendor?         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  categoryId    Int
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  brandId       Int
+  brand         Brand?          @relation(fields: [brandId], references: [id])
+  keywords      String?
+  sku           Int?
+  barcode       String?
+  image         String?
+  orderItems    OrderItem[]
+  productImages ProductImages[]
+  cartItems     CartItem[]
+  subOrderItems SubOrderItem[]
+  wishlistItem  WishlistItem[]
+  reviews       Review[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
+
+  @@index([categoryId])
+  @@index([sku])
+  @@map("products")
+}
+
+model ProductImages {
+  id        Int     @id @default(autoincrement())
+  url       String
+  altText   String?
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model Vendor {
+  id            Int             @id @default(autoincrement())
+  user          User            @relation(fields: [userId], references: [id])
+  userId        Int
+  domain        String?
+  status        Status?         @default(pending)
+  active        Boolean?        @default(true)
+  vendorDetails VendorDetails[]
+  products      Product[]
+  subOrders     SubOrder[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
+
+  @@index([userId])
+  @@map("vendors")
+}
+
+enum Status {
+  pending
+  approved
+  banned
+  disabled
+}
+
+model VendorDetails {
+  id          Int        @id @default(autoincrement())
+  displayName String?
+  name        String?
+  phone       String?
+  email       String?
+  description String?
+  logo        String?
+  vendorId    Int?
+  vendor      Vendor?    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorUrlId Int?
+  vendorUrl   VendorUrl? @relation(fields: [vendorUrlId], references: [id], onDelete: Cascade)
+  addressId   Int?
+  address     Address?   @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now())
+
+  @@index([vendorId])
+  @@map("vendor_details")
+}
+
+model VendorUrl {
+  id            Int             @id @default(autoincrement())
+  name          String?
+  url           String?
+  vendorDetails VendorDetails[]
+
+  @@map("vendor_urls")
+}
+
+model Order {
+  id               Int             @id @default(autoincrement())
+  orderId          String          @unique
+  orderItemId      String
+  price            Decimal
+  deliveryFee      String?
+  discount         String?
+  total            String
+  paymentMode      PaymentMode
+  paymentStatus    String
+  status           OrderStatus?
+  comment          String?
+  addressId        Int?
+  address          Address?        @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  user             User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId           Int?
+  orderItems       OrderItem[]
+  paymentDetails   PaymentDetails? @relation(fields: [paymentDetailsId], references: [id], onDelete: SetNull)
+  paymentDetailsId Int?
+  subOrders        SubOrder[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now())
+
+  @@map("orders")
+}
+
+enum PaymentMode {
+  COD
+  ONLINE_PAYMENT
+}
+
+enum OrderStatus {
+  placed
+  confirmed
+  picked
+  onway
+  delivered
+  returned
+  cancelled
+  paused
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  quantity    Int
+  price       Decimal
+  orderItemId String
+  product     Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   Int
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     Int?
+
+  @@map("order_items")
+}
+
+model SubOrder {
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now())
+  order         Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderId       Int?
+  seller        User?          @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  sellerId      Int?
+  vendor        Vendor?        @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  vendorId      Int?
+  status        String?
+  total         String?
+  subOrderItems SubOrderItem[]
+
+  @@map("sub_orders")
+}
+
+model SubOrderItem {
+  id         Int       @id @default(autoincrement())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now())
+  quantity   Int
+  price      Decimal
+  subOrderId Int?
+  subOrder   SubOrder? @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  product    Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  Int
+
+  @@map("sub_order_items")
+}
+
+model PaymentDetails {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  orderId   Int
+  amount    Int
+  provider  String?
+  status    String?
+  order     Order[]
+
+  @@map("payment_details")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  quantity  Int
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+
+  @@map("cartItems")
+}
+
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("wishlistItems")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  rating    Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("reviews")
+}
